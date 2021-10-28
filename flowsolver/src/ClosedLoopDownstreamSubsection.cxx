@@ -210,9 +210,9 @@ void ClosedLoopDownstreamSubsection::buildAndSolveLinearSystem_internal(const do
 
             // Extract the actual data array in the petsc matrix nextMatrixToAddToSystem, so we can pass it to MatSetValues, for inclusion in m_closedLoopSystemMatrix:
             PetscScalar* rawDataInNextMatrixToAddToSystem;
-            errFlag = MatGetArray(nextMatrixToAddToSystem, &rawDataInNextMatrixToAddToSystem); CHKERRABORT(PETSC_COMM_SELF,errFlag);
+            errFlag = MatDenseGetArray(nextMatrixToAddToSystem, &rawDataInNextMatrixToAddToSystem); CHKERRABORT(PETSC_COMM_SELF,errFlag);
 
-            // Irritatingly, MatGetArray returns a column-major array (in the case of matseqdense - the Petsc type of matrix that we have here),
+            // Irritatingly, MatDenseGetArray returns a column-major array (in the case of matseqdense - the Petsc type of matrix that we have here),
             // but MatSetValues (below) expects a row-major array. So we need to transpose it. Le sigh.
             PetscScalar* transposedRawDataInNextMatrixToAddToSystem = new PetscScalar[numberOfColumns * numberOfRows];
             int writeLocation = 0;
@@ -227,9 +227,9 @@ void ClosedLoopDownstreamSubsection::buildAndSolveLinearSystem_internal(const do
             assert(writeLocation = numberOfRows*numberOfColumns);
 
             // I'm not convinced this call is necessary given that we're about to destroy nextMatrixToAddToSystem anyway,
-            // but the Petsc documentation says I MUST call it after MatGetArray once access to an array is no longer needed,
+            // but the Petsc documentation says I MUST call it after MatDenseGetArray once access to an array is no longer needed,
             // and who am I to argue with a block-capital imperative?
-            errFlag = MatRestoreArray(nextMatrixToAddToSystem, &rawDataInNextMatrixToAddToSystem); CHKERRABORT(PETSC_COMM_SELF,errFlag);
+            errFlag = MatDenseRestoreArray(nextMatrixToAddToSystem, &rawDataInNextMatrixToAddToSystem); CHKERRABORT(PETSC_COMM_SELF,errFlag);
 
             // std::cout << "first numRows entries in the underlying array for upstream circuit " << upstreamCircuit << ":" << std::endl;
             // for (int jj=0; jj<numberOfRows;jj++)
@@ -311,9 +311,9 @@ void ClosedLoopDownstreamSubsection::buildAndSolveLinearSystem_internal(const do
 
             // Extract the actual data array in the petsc matrix matrixContribution, so we can pass it to MatSetValues, for inclusion in m_closedLoopSystemMatrix:
             PetscScalar* rawDataInMatrix;
-            errFlag = MatGetArray(matrixContribution, &rawDataInMatrix); CHKERRABORT(PETSC_COMM_SELF,errFlag);
+            errFlag = MatDenseGetArray(matrixContribution, &rawDataInMatrix); CHKERRABORT(PETSC_COMM_SELF,errFlag);
 
-            // Irritatingly, MatGetArray returns a column-major array (in the case of matseqdense - the Petsc type of matrix that we have here),
+            // Irritatingly, MatDenseGetArray returns a column-major array (in the case of matseqdense - the Petsc type of matrix that we have here),
             // but MatSetValues (below) expects a row-major array. So we need to transpose it. Le sigh.
             PetscScalar* transposedRawDataInMatrix = new PetscScalar[numberOfColumns * numberOfRows];
             int writeLocation = 0;
@@ -328,7 +328,7 @@ void ClosedLoopDownstreamSubsection::buildAndSolveLinearSystem_internal(const do
             assert(writeLocation = numberOfRows*numberOfColumns);
 
             // as noted above, I'm not sure this is needed... but just in case...
-            errFlag = MatRestoreArray(matrixContribution, &rawDataInMatrix); CHKERRABORT(PETSC_COMM_SELF,errFlag);
+            errFlag = MatDenseRestoreArray(matrixContribution, &rawDataInMatrix); CHKERRABORT(PETSC_COMM_SELF,errFlag);
 
             // Create location data for the rows and columns where we will place matrixContribution in m_closedLoopSystemMatrix:
             PetscInt globalRowIndices[numberOfRows];

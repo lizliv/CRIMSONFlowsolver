@@ -778,7 +778,7 @@ namespace Seldon
     CheckDim(A, B, C, "MltAdd(alpha, A, B, beta, C)");
 #endif
     T1 *local_a;
-    MatGetArray(A.GetPetscMatrix(), &local_a);
+    MatDenseGetArray(A.GetPetscMatrix(), &local_a);
     int nlocal_A;
     int mlocal_A;
     MatGetLocalSize(A.GetPetscMatrix(), &mlocal_A, &nlocal_A);
@@ -786,7 +786,7 @@ namespace Seldon
     local_A.SetData(mlocal_A, na, local_a);
 
     T4 *local_c;
-    MatGetArray(C.GetPetscMatrix(), &local_c);
+    MatDenseGetArray(C.GetPetscMatrix(), &local_c);
     int nlocal_C;
     int mlocal_C;
     MatGetLocalSize(C.GetPetscMatrix(), &mlocal_C, &nlocal_C);
@@ -796,11 +796,11 @@ namespace Seldon
     MltAdd(alpha, local_A, B, beta, local_C);
 
     local_A.Nullify();
-    MatRestoreArray(A.GetPetscMatrix(), &local_a);
+    MatDenseRestoreArray(A.GetPetscMatrix(), &local_a);
     A.Flush();
 
     local_C.Nullify();
-    MatRestoreArray(C.GetPetscMatrix(), &local_c);
+    MatDenseRestoreArray(C.GetPetscMatrix(), &local_c);
     C.Flush();
   }
 

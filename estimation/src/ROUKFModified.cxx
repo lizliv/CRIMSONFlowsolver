@@ -359,7 +359,7 @@ void ROUKFModified<T, Model, ObservationManager>::Analyze() {
 			Matrix<T, General, ColMajor, MallocAlloc<T> > local_A;
 			int na = Z_i_p_orig.GetN();  // get number of columns
 			T *local_a;
-			MatGetArray(Z_i_p_orig.GetPetscMatrix(), &local_a);  // get data pointer from petsc
+			MatDenseGetArray(Z_i_p_orig.GetPetscMatrix(), &local_a);  // get data pointer from petsc
 			int nlocal_A;
 			int mlocal_A;
 			MatGetLocalSize(Z_i_p_orig.GetPetscMatrix(), &mlocal_A, &nlocal_A);  // get number of local rows
@@ -421,7 +421,7 @@ void ROUKFModified<T, Model, ObservationManager>::Analyze() {
 			// W^-1*HL_fe
 			int na = HL_p_fe.GetN();  // get number of columns
 			T *local_a;
-			MatGetArray(HL_p_fe.GetPetscMatrix(), &local_a);  // get data pointer from petsc
+			MatDenseGetArray(HL_p_fe.GetPetscMatrix(), &local_a);  // get data pointer from petsc
 			int nlocal_A;
 			int mlocal_A;
 			MatGetLocalSize(HL_p_fe.GetPetscMatrix(), &mlocal_A, &nlocal_A);  // get number of local rows
@@ -447,7 +447,7 @@ void ROUKFModified<T, Model, ObservationManager>::Analyze() {
 			// HL
 			int nb = HL_p_orig.GetN();
 			T *local_b;
-			MatGetArray(HL_p_orig.GetPetscMatrix(), &local_b);
+			MatDenseGetArray(HL_p_orig.GetPetscMatrix(), &local_b);
 			int nlocal_B;
 			int mlocal_B;
 			MatGetLocalSize(HL_p_orig.GetPetscMatrix(), &mlocal_B, &nlocal_B);
@@ -983,7 +983,7 @@ void ROUKFModified<T, Model, ObservationManager>::Finalize() {
 	// L matrix
 	int n = this->L_.GetN();
 	T *local_l;
-	MatGetArray(this->L_.GetPetscMatrix(), &local_l);
+	MatDenseGetArray(this->L_.GetPetscMatrix(), &local_l);
 	int nlocal_L;
 	int mlocal_L;
 	MatGetLocalSize(this->L_.GetPetscMatrix(), &mlocal_L, &nlocal_L);
