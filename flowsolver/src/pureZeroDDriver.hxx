@@ -5,6 +5,7 @@
 #include "Netlist3DDomainReplacement.hxx"
 #include "BoundaryConditionManager.hxx"
 #include <boost/shared_ptr.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 class PureZeroDDriver
 {

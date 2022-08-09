@@ -65,10 +65,14 @@ DEBUG_ALE_ON = 0
 
 # OPT_FLAGS       = ['-O3', '-std=c++0x', '-fsanitize=undefined', '-static-libasan', '-DNDEBUG','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
 # OPT_FLAGS       = ['-O3', '-std=c++0x', '-fsanitize=address', '-static-libasan', '-DNDEBUG','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
-OPT_FLAGS       = ['-O3', '-std=c++0x', '-DNDEBUG','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
-OPT_FFLAGS      = ['-fallow-argument-mismatch','-fallow-argument-mismatch','-ffree-line-length-none','-O3','-cpp','-D\'DEBUG_ALE='+str(DEBUG_ALE_ON)+'\'','-D\'EXTRA_CONSOLE_OUTPUT='+str(EXTRA_CONSOLE_OUTPUT_ON)+'\'']
-DEBUG_FLAGS     = ['-O0','-g','-std=c++0x','-pthread','-Wall','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
-DEBUG_FFLAGS    = ['-fallow-argument-mismatch','-ffree-line-length-none','-g','-fbacktrace','-cpp','-DDEBUG_ALE='+str(DEBUG_ALE_ON),'-DEXTRA_CONSOLE_OUTPUT='+str(EXTRA_CONSOLE_OUTPUT_ON)]  #-cpp #-fno-underscoring
+# OPT_FLAGS       = ['-O0','-g3', '-std=c++0x', '-DNDEBUG','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
+# OPT_FFLAGS      = ['-O0','-g3','-fbacktrace','-fcheck=all','-fallow-argument-mismatch','-ffree-line-length-none','-cpp','-D\'DEBUG_ALE='+str(DEBUG_ALE_ON)+'\'','-D\'EXTRA_CONSOLE_OUTPUT='+str(EXTRA_CONSOLE_OUTPUT_ON)+'\'']
+
+OPT_FLAGS       = ['-O3','-std=c++0x', '-DNDEBUG','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
+OPT_FFLAGS      = ['-O3','-fallow-argument-mismatch','-ffree-line-length-none','-cpp','-D\'DEBUG_ALE='+str(DEBUG_ALE_ON)+'\'','-D\'EXTRA_CONSOLE_OUTPUT='+str(EXTRA_CONSOLE_OUTPUT_ON)+'\'']
+
+DEBUG_FLAGS     = ['-O0','-std=c++0x','-pthread','-Wall','-DDEBUG_ALE='+str(DEBUG_ALE_ON)]
+DEBUG_FFLAGS    = ['-O0','-fallow-argument-mismatch','-ffree-line-length-none','-fbacktrace','-fcheck=all', '-Wall' ,'-cpp','-DDEBUG_ALE='+str(DEBUG_ALE_ON),'-DEXTRA_CONSOLE_OUTPUT='+str(EXTRA_CONSOLE_OUTPUT_ON)]  #-cpp #-fno-underscoring
 
 if DISABLE_ACUSIM==1:
 	OPT_FLAGS.append('-DDISABLE_ACUSIM_TESTS')
@@ -84,8 +88,8 @@ ADDITIONAL_LINKFLAGS = []
 # Python include and library list #
 ###################################
 
-PYTHON_INCDIR   = [usrhome+'/.local/python2.7/include/python2.7',]  # setme
-PYTHON_LIBSDIR  = [usrhome+'/.local/python2.7/lib',]
+PYTHON_INCDIR   = [usrhome+'/anaconda3/envs/flow/include/python2.7',]  # setme
+PYTHON_LIBSDIR  = [usrhome+'/anaconda3/envs/flow/lib',]
 PYTHON_LIBSLIST = ['dl','util','m','python2.7']
 PYTHON_LDMODULEFLAGS = ['-Wl,-export-dynamic','-Wl,-Bsymbolic-functions']
 
@@ -125,9 +129,9 @@ INTEL_INCDIR   = [INTEL_TOP+'/include']
 INTEL_LIBSDIR  = [INTEL_TOP+'/lib/intel64']
 INTEL_LIBSLIST = ['ifcore','ifport','imf','irc']
 
-GNU_TOP      = '/cm/shared/apps/spack/cpu/opt/spack/linux-centos8-zen/gcc-8.3.1/gcc-10.2.0-n7su7jf54rc7l2ozegds5xksy6qhrjin'  # setme
-GNU_INCDIR   = [GNU_TOP+'/include']
-GNU_LIBSDIR  = [GNU_TOP+'/lib64'] 
+GNU_TOP      =''# '/cm/shared/apps/spack/cpu/opt/spack/linux-centos8-zen/gcc-8.3.1/gcc-10.2.0-n7su7jf54rc7l2ozegds5xksy6qhrjin'  # setme
+GNU_INCDIR   =[]# [GNU_TOP+'/include']
+GNU_LIBSDIR  =[]# [GNU_TOP+'/lib64'] 
 GNU_LIBSLIST = ['gfortran'] 
 
 RUNTIME_INCDIR   = GNU_INCDIR 
@@ -138,10 +142,10 @@ RUNTIME_LIBSLIST = GNU_LIBSLIST
 # MPI include and library list #
 ################################
 
-MPI_TOP        = '/cm/shared/apps/spack/cpu/opt/spack/linux-centos8-zen2/gcc-10.2.0/openmpi-4.0.4-g62qv7hwmzegprnzni6cjvombwxu3cu6/'  # setme
-MPI_INCDIR     = [MPI_TOP+'/include']
-MPI_LIBSDIR    = [MPI_TOP+'/lib']
-MPI_LIBSLIST   = ['mpi','mpi_mpifh']
+MPI_TOP        =''# '/cm/shared/apps/spack/cpu/opt/spack/linux-centos8-zen2/gcc-10.2.0/openmpi-4.0.4-g62qv7hwmzegprnzni6cjvombwxu3cu6/'  # setme
+MPI_INCDIR     =[]# [MPI_TOP+'/include']
+MPI_LIBSDIR    =[]# [MPI_TOP+'/lib']
+MPI_LIBSLIST   =['mpi','mpi_mpifh']
 
 ####################################
 # Metis 4 include and library list #
@@ -209,7 +213,7 @@ LUA_LIBSLIST = ['lua']
 # PetSC include and libraries #
 ###############################
 
-PETSC_TOP    = usrhome+'/.local/petsc-3.16-opt'# setme
+PETSC_TOP    = usrhome+'/.local/petsc'# setme
 PETSC_BUILD = ''  # setme
 PETSC_INCDIR = [PETSC_TOP+'/include']
 PETSC_LIBSDIR   = [PETSC_TOP+'/lib']
@@ -219,16 +223,16 @@ PETSC_LIBSLIST = ['petsc']
 # Boost 1.57 include and libraries #
 ####################################
 
-BOOSTCPP_TOP      = '/cm/shared/apps/spack/cpu/opt/spack/linux-centos8-zen2/gcc-10.2.0/boost-1.74.0-hurj3p4dpe26k2rjwsxa6pubxopjioo7'# setme
-BOOSTCPP_INCDIR   = [BOOSTCPP_TOP+'/include']
-BOOSTCPP_LIBSDIR  = [BOOSTCPP_TOP+'/lib']
+BOOSTCPP_TOP      =''# '/cm/shared/apps/spack/cpu/opt/spack/linux-centos8-zen2/gcc-10.2.0/boost-1.74.0-hurj3p4dpe26k2rjwsxa6pubxopjioo7'# setme
+BOOSTCPP_INCDIR   =[]# [BOOSTCPP_TOP+'/include']
+BOOSTCPP_LIBSDIR  =[]# [BOOSTCPP_TOP+'/lib']
 BOOSTCPP_LIBSLIST = ['boost_thread','boost_filesystem','boost_system']
 
 #################################
 # VTK 5.8 include and libraries #
 #################################
 
-VTK_TOP    = usrhome+'/.local/vtk-crim/'# setme
+VTK_TOP    = usrhome+'/.local/vtk-crimson/'# setme
 VTK_INCDIR = [VTK_TOP+'/include/vtk-5.8']
 VTK_LIBSDIR   = [VTK_TOP+'/lib/vtk-5.8/']
 VTK_LIBSLIST = ['vtkGraphics','vtkFiltering','vtkGenericFiltering','vtkIO','vtkCommon','vtksys']

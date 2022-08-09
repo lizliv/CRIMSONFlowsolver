@@ -187,6 +187,12 @@
 !              
               if (ideformwall.eq.1) then
                 allocate (mSWB(nelblb)%p(npro,nProps))
+              else
+                ! gcc behavior changed in 10.1.0. Passing an unassociated/unallocated pointer to a function that expects an array is causing a seg fault.
+                ! Specifically, while calling AbsMFG() near about line 400 in in elmgmr.f90.
+                ! I am declaring a dummy array here to prevent the seg fault for now. This is not accessed if deformable wall is not used.
+                ! 
+                allocate (mSWB(nelblb)%p(1,1)) 
               end if
 
               if (ideformwall.eq.1 .and. iUseBET.gt.0) then

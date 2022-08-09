@@ -1,0 +1,8 @@
+*.mod
+*.[oa]
+*-procs-case
+bin/flowsolver
+bin/estimator
+bin/flowsolver_and_observer
+bin/postsolver
+bin/mysolver

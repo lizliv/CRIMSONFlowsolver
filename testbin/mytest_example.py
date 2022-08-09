@@ -52,7 +52,8 @@ if [ $crimsonShuffleBool == 1 ]; then
   shuffleCommand=--gtest_shuffle
   seedCommand=--gtest_random_seed=$randomSeed
 fi
-
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS=1
 export CRIMSON_FLOWSOLVER_HOME="%s"
 export PHASTA_CONFIG="%s/configs"
 export LD_LIBRARY_PATH=""
