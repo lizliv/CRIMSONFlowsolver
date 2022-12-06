@@ -1817,6 +1817,9 @@ subroutine itrdrv_iter_finalize() bind(C, name="itrdrv_iter_finalize")
     !
     if ((irs .ge. 1) .and. (mod(currentTimestepIndex, ntout) .eq. 0)) then
         call restar ('out ', yold, ac)
+
+        call restar_mpiio ('out ', yold, ac)
+
         if(ideformwall.eq.1) then
             call write_displ(myrank, currentTimestepIndex, nshg, 3, uold, uref)
             if (imeasdist.eq.1) then

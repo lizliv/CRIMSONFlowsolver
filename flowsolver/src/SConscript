@@ -184,6 +184,7 @@ sources="""
 	qpbc.f90
 	ramg_driver.f90
 	restar.f90
+	restar_mpiio.f90
 	rotabc.f90
 	rstatic.f90
 	solfar.f90
