@@ -97,41 +97,15 @@ subroutine par_write_restart()
         implicit none
         include "mpif.h"
         
-        integer currentTimeStepIndex, fh
-        character(len=500) :: filename, str
+        ! integer currentTimeStepIndex, fh
+        ! character(len=500) :: filename, str
         character,parameter :: lf=achar(10) !linefeed aka newline
 
-        integer :: fileno
-        integer, parameter :: msgsize=6
-        character(msgsize) :: message
-        integer(mpi_offset_kind) :: offset
-        integer, dimension(mpi_status_size) :: wstatus
-        integer :: ierr, rank, comsize ! MPI variable initialization
-        
-        ! call MPI_Init(ierr)
-        call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
-        call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
-
-        fh = 20 !file unit
-        currentTimeStepIndex=0
+        ! fh = 20 !file unit
+        ! currentTimeStepIndex=0
 
         ! character*4 code
         ! dimension qp(nshg,ndof),acp(nshg,ndof)
-
-        if (mod(rank,2) == 0) then
-                message = "Hello " 
-        else 
-                message = "World!"
-        endif
-
-        call MPI_File_open(MPI_COMM_WORLD, 'test.txt',    &
-        ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
-        MPI_INFO_NULL, fileno, ierr)
-
-        call MPI_File_seek (fileno, offset, MPI_SEEK_SET, ierr)
-        call MPI_File_write(fileno, message, msgsize, MPI_CHARACTER, &
-                            wstatus, ierr)
-        call MPI_File_close(fileno, ierr)
 
         ! write(filename, '(a, i0, a)') 'restart.', currentTimestepIndex, '.0'
         ! ! open the file and write the proc ID to it?
@@ -139,6 +113,42 @@ subroutine par_write_restart()
         ! form='unformatted', access='stream')
         ! write(fh) "# Output Generated for ERL :)"//lf
         ! close(fh)
+        
+        integer(mpi_offset_kind) :: offset
+        integer, dimension(mpi_status_size) :: wstatus
+        integer :: fileno
+        integer :: ierr, rank, comsize
+        
+        integer :: msgsize
+        ! integer, parameter :: msgsize=50
+        character(len=18) :: message ! Arbitrary large mesage size for now
 
-        ! call MPI_Finalize(ierr)
+        call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
+        call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+        
+        ! if (mod(rank,2) == 0) then
+        ! message = "Hello!"//lf
+        ! else 
+        ! message = "World!"//lf
+        ! endif
+
+        write(message, '(a, i0, a)') 'Hello from proc ',rank,lf
+
+        msgsize = LEN(message)
+
+        offset = rank*msgsize
+
+        call MPI_File_open(MPI_COMM_WORLD, "helloworld.txt",     &
+                        ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+                        MPI_INFO_NULL, fileno, ierr)
+
+        ! call MPI_File_seek(fileno, offset, MPI_SEEK_SET, ierr)
+        ! call MPI_File_write(fileno, message, msgsize, MPI_CHARACTER, &
+        !                 wstatus, ierr)
+
+        call MPI_File_write_at(fileno, offset, message, msgsize, MPI_CHARACTER, &
+        wstatus, ierr)
+
+        call MPI_File_close(fileno, ierr)
+
 end
