@@ -114,29 +114,55 @@ subroutine par_write_restart()
         ! write(fh) "# Output Generated for ERL :)"//lf
         ! close(fh)
         
-        integer(mpi_offset_kind) :: offset
+        integer currentTimeStepIndex,i1,i2
+        integer total_nshg, ndof
+        integer(mpi_offset_kind) :: offset, fhoffset, shoffset
         integer, dimension(mpi_status_size) :: wstatus
         integer :: fileno
         integer :: ierr, rank, comsize
         
-        integer :: msgsize
+        integer :: msgsize, fhsize, shSize
         ! integer, parameter :: msgsize=50
+        character(len=67) :: fileHeader
+        character(len=50) :: mgLine ! Always the same?
+        character(len=50) :: nmLine ! This could change based on total_nshg
+        character(len=50) :: nvLine ! mdof likely always < 10, so should be the same
+        character(len=50) :: solLine ! Can change based on ndof and total_nshg
+        character(len=250) :: solHeader
         character(len=18) :: message ! Arbitrary large mesage size for now
 
         call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
         call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
         
-        ! if (mod(rank,2) == 0) then
-        ! message = "Hello!"//lf
-        ! else 
-        ! message = "World!"//lf
-        ! endif
+        ! variables that exist in CRIMSON that we would like to use
+        i1=5
+        i2=1
+        total_nshg = 1000 ! can get from ltg.dat
+        ndof  = 5
+        currentTimeStepIndex=0
+        if (rank == 0) then
+                write(fileHeader, '(a,a)') "# PHASTA Input File Version 2.0"//lf,"# Byte Order Magic Number : 362436"//lf
+
+                write(mgLine, '(a,i0,a,i0,a)') "byteorder magic number  : < ",i1," > ",i2,lf
+                write(nmLine, '(a,i0,a,i0,a)') "number of modes : < ",0," > ",total_nshg,lf
+                write(nvLine, '(a,i0,a,i0,a)') "number of variables : < ",0," > ",ndof,lf
+                write(solLine,'(a,i0,a,3(x,i0),a)') "solution  : < ",(total_nshg*ndof*8+1)," > ",total_nshg,ndof,currentTimeStepIndex,lf
+
+                write(solHeader, '(a,a,a,a)') trim(mgLine),trim(nmLine),trim(nvLine),trim(solLine)
+        endif
 
         write(message, '(a, i0, a)') 'Hello from proc ',rank,lf
 
+        fileHeader = trim(fileHeader)
+        solHeader = trim(solHeader)
+        
         msgsize = LEN(message)
+        fhsize = LEN(fileHeader)
+        shSize = LEN(solHeader)
 
-        offset = rank*msgsize
+        fhoffset = 0
+        shoffset = fhsize
+        offset = shoffset + shSize + rank*msgsize
 
         call MPI_File_open(MPI_COMM_WORLD, "helloworld.txt",     &
                         ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
@@ -146,6 +172,12 @@ subroutine par_write_restart()
         ! call MPI_File_write(fileno, message, msgsize, MPI_CHARACTER, &
         !                 wstatus, ierr)
 
+        if (rank == 0) then
+                call MPI_File_write_at(fileno, fhoffset, fileHeader, fhsize, MPI_CHARACTER, &
+                        wstatus, ierr)
+                call MPI_File_write_at(fileno, shoffset, solHeader, shSize, MPI_CHARACTER, &
+                        wstatus, ierr)
+        endif
         call MPI_File_write_at(fileno, offset, message, msgsize, MPI_CHARACTER, &
         wstatus, ierr)
 
