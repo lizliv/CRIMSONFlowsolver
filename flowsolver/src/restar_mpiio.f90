@@ -118,11 +118,12 @@ subroutine par_write_restart()
         ! close(fh)
         
         integer i1,i2
-        integer(mpi_offset_kind) :: offset, fhoffset, shoffset
+        integer(mpi_offset_kind) :: offset, fhoffset, bmnoffset, shoffset
         integer, dimension(mpi_status_size) :: wstatus
         integer :: fileno
         integer :: ierr, rank, comsize
-        
+        real :: magicNumber
+
         integer :: msgsize, fhsize, shSize
         ! integer, parameter :: msgsize=50
         character(len=67) :: fileHeader
@@ -136,6 +137,8 @@ subroutine par_write_restart()
         call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
         call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
         
+        magicNumber = 362436
+
         ! variables that exist in CRIMSON that we would like to use
         i1=5
         i2=1
@@ -149,7 +152,7 @@ subroutine par_write_restart()
                 write(nvLine, '(a,i0,a,i0,a)') "number of variables : < ",0," > ",ndof,lf
                 write(solLine,'(a,i0,a,3(x,i0),a)') "solution  : < ",(nshg*ndof*8+1)," > ",nshg,ndof,currentTimeStepIndex,lf
 
-                write(solHeader, '(a,a,a,a)') trim(mgLine),trim(nmLine),trim(nvLine),trim(solLine)
+                write(solHeader, '(a,a,a)') trim(nmLine),trim(nvLine),trim(solLine)
         endif
         
         fhsize = LEN_TRIM(fileHeader)
@@ -159,7 +162,8 @@ subroutine par_write_restart()
         msgsize = LEN_TRIM(message)
 
         fhoffset = 0
-        shoffset = fhsize
+        bmnoffset = fhsize 
+        shoffset = bmnoffset + LEN_TRIM(mgLine) + sizeof(magicNumber)
         offset = shoffset + shSize + rank*msgsize
 
         call MPI_File_open(MPI_COMM_WORLD, "helloworld.txt",     &
@@ -171,8 +175,15 @@ subroutine par_write_restart()
         !                 wstatus, ierr)
 
         if (rank == 0) then
+                ! Write the file header
                 call MPI_File_write_at(fileno, fhoffset, fileHeader, fhsize, MPI_CHARACTER, &
                         wstatus, ierr)
+                ! Write the byte order magic number
+                call MPI_File_write_at(fileno, bmnoffset, mgLine, LEN_TRIM(mgLine), MPI_CHARACTER, &
+                        wstatus, ierr)
+                call MPI_File_write_at(fileno, bmnoffset+LEN_TRIM(mgLine), magicNumber, sizeof(magicNumber), MPI_DOUBLE_PRECISION, &
+                        wstatus, ierr)
+                ! Write the solution header
                 call MPI_File_write_at(fileno, shoffset, solHeader, shSize, MPI_CHARACTER, &
                         wstatus, ierr)
         endif
