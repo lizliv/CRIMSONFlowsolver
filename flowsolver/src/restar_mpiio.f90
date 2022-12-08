@@ -101,53 +101,39 @@ subroutine par_write_restart()
         implicit none
         include "mpif.h"
         
-        ! integer currentTimeStepIndex, fh
-        ! character(len=500) :: filename, str
-        character,parameter :: lf=achar(10) !linefeed aka newline
-
+        ! if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) ! Useful debugging trick
+        
         ! character*4 code
         ! dimension qp(nshg,ndof),acp(nshg,ndof)
         
-        integer i1,i2
-        integer(mpi_offset_kind) displacement !cannot use literal 0, use 0_MPI_OFFSET_KIND for zero
-        integer(mpi_offset_kind) :: offset, fhoffset, shoffset
-        integer, dimension(mpi_status_size) :: wstatus
         integer :: fileno
+        integer, dimension(mpi_status_size) :: wstatus
         integer :: ierr, rank, comsize
+        
+        integer i1,i2
         integer :: magicNumber
+        character,parameter :: lf=achar(10) !linefeed aka newline
 
-        integer :: msgsize
-        ! integer, parameter :: msgsize=50
-        ! character(len=67) :: fileHeader
-        ! character(len=50) :: mgLine ! Always the same?
-        ! character(len=50) :: nmLine ! This could change based on total_nshg
-        ! character(len=50) :: nvLine ! mdof likely always < 10, so should be the same
-        ! character(len=50) :: solLine ! Can change based on ndof and total_nshg
-        ! character(len=500) :: solHeader
         character(len=:), allocatable :: fh, sh, message
+        ! cannot use literal 0, use 0_MPI_OFFSET_KIND for zero
+        integer(mpi_offset_kind) displacement 
+        integer(mpi_offset_kind) :: offset, fhoffset, shoffset
+
+        magicNumber = 362436
+        ! variables that don't exist in CRIMSON but won't change
+        i1=5
+        i2=1
 
         call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
         call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
         
-        magicNumber = 362436
-        
-        if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) ! Useful debugging trick
-        
-        ! variables that don't exist in CRIMSON but won't change
-        i1=5
-        i2=1
-        ! total_nshg = 1000 ! can get from ltg.dat
-        ! if (rank == 0) then
-                ! write(fileHeader, '(a,a)') "# PHASTA Input File Version 2.0"//lf,"# Byte Order Magic Number : 362436"//lf
-                ! ! NOTE: Should be using the total number of nshg not just nshg
-                ! write(fileHeader, '(a,a,i0,a,i0,a') fileHeader, "byteorder magic number  : < ",i1," > ",i2,lf
-                fh = "# PHASTA Input File Version 2.0"//lf//"# Byte Order Magic Number : "//itoa(magicNumber)//lf
-                fh = fh//"number of modes : < "//itoa(0)//" > "//itoa(nshg)//lf
-                fh = fh//"number of variables : < "//itoa(0)//" > "//itoa(ndof)//lf
-                fh = fh//"byteorder magic number  : < "//itoa(i1)//" > "//itoa(i2)//lf
+        ! NOTE: Should be using the total number of nshg not just nshg
+        fh = "# PHASTA Input File Version 2.0"//lf//"# Byte Order Magic Number : "//itoa(magicNumber)//lf
+        fh = fh//"number of modes : < "//itoa(0)//" > "//itoa(nshg)//lf
+        fh = fh//"number of variables : < "//itoa(0)//" > "//itoa(ndof)//lf
+        fh = fh//"byteorder magic number  : < "//itoa(i1)//" > "//itoa(i2)//lf
                 
-                sh = lf//"solution  : < "//itoa(nshg*ndof*8+1)//" > "//itoa(nshg)//itoa(ndof)//itoa(currentTimeStepIndex)//lf
-        ! endif
+        sh = lf//"solution  : < "//itoa(nshg*ndof*8+1)//" > "//itoa(nshg)//itoa(ndof)//itoa(currentTimeStepIndex)//lf
         
         message = 'Hello from proc '//itoa(rank)//lf
         
@@ -174,11 +160,9 @@ subroutine par_write_restart()
                         wstatus, ierr)
         endif
         
-        if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) 
         displacement = shoffset + sizeof(sh)
         call MPI_File_set_view(fileno, displacement, MPI_BYTE, MPI_BYTE, 'native', MPI_INFO_NULL, ierr)
 
-        if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) 
         offset = rank*sizeof(message)
         call MPI_File_write_at(fileno, offset, message, len(message), MPI_CHARACTER, &
                 wstatus, ierr)
