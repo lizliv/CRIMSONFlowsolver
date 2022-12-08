@@ -766,7 +766,7 @@ contains
             END DO
             IF (i .GT. ls%sD) i = ls%sD
 
-            y = err(1:i)
+            y(1:i) = err(1:i)
             DO j=i, 1, -1
                 DO k=j+1, i
                     y(j) = y(j) - h(j,k)*y(k)

@@ -22,10 +22,11 @@
         include "mpif.h"
         !include "auxmpi.h"
 !
-        dimension res(nshg,nflow),    mproc(1),  rvec(numpe)
-        dimension rtmp(nshg),        nrsmax(1)
+        dimension res(nshg,nflow),  rvec(numpe)
+        dimension rtmp(nshg)
         dimension irecvcount(numpe), resvec(numpe)
 
+        integer   nrsmax,mproc
         real*8    y(nshg,ndof),    Dy(nshg,4)
 
 !
@@ -78,11 +79,11 @@
            call MPI_REDUCE_SCATTER (resvec, resmax, irecvcount, &
                 MPI_DOUBLE_PRECISION, MPI_MAX, INEWCOMM, ierr)
            if (resmax .eq. resvec(1) ) then
-              mproc(1) = myrank
-              nrsmax   = maxloc(rtmp)
+              mproc = myrank
+              nrsmax   = maxloc(rtmp,1)
            else
-              nrsmax(1) = -1
-              mproc(1)  = -1
+              nrsmax = -1
+              mproc  = -1
            endif
            resvec = nrsmax
            call MPI_REDUCE_SCATTER (resvec, rvec, irecvcount, &
@@ -94,8 +95,8 @@
            mproc = rvec(1)
       else
           resmax   = resmaxl
-          nrsmax   = maxloc(rtmp)
-          mproc(1) = 0
+          nrsmax   = maxloc(rtmp,1)
+          mproc = 0
       endif
 !
 !.... correct the residuals
@@ -140,11 +141,11 @@
            
            write (*,2000) currentTimestepIndex+1, cputme, totres, jtotrs, rmaxdyU, &
                 rmaxdyP,nrsmax, &
-                mproc(1)+1, jresmx, int(statsflow(4)), &
+                mproc+1, jresmx, int(statsflow(4)), &
                 int(statsflow(1))
            write (ihist,2000) currentTimestepIndex+1, cputme, totres, jtotrs,  &
                 rmaxdyU, rmaxdyP, nrsmax, &
-                mproc(1)+1,jresmx,int(statsflow(4)), &
+                mproc+1,jresmx,int(statsflow(4)), &
                 int(statsflow(1))
            
            call flush(ihist)
