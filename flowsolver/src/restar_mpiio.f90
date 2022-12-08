@@ -603,7 +603,7 @@ contains
                 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               
                 fh = 20
-                write(filename, '(a, i0, a)') 'restart.', currentTimestepIndex, '.0'
+                write(filename, '(a, i0, a)') 'restart_ser.', currentTimestepIndex, '.0'
                 if(myrank .eq. 0)then
                    ! root writes the header
                    ! open the file
@@ -731,11 +731,9 @@ contains
 
                 character(len=:), allocatable :: fh, sh, message
                 ! cannot use literal 0, use 0_MPI_OFFSET_KIND for zero
-                integer(mpi_offset_kind) displacement 
-                integer(mpi_offset_kind) :: offset, fhoffset, shoffset
-                integer(mpi_offset_kind) :: dofoffset
+                integer(mpi_offset_kind) displacement, dofoffset
 
-                write(filename, '(a, i0, a)') 'par_restart.', currentTimestepIndex, '.0'
+                write(filename, '(a, i0, a)') 'restart_par.', currentTimestepIndex, '.0'
                 magicNumber = 362436
                 ! variables that don't exist in CRIMSON but won't change
                 i1=5
@@ -753,13 +751,11 @@ contains
                         
                 sh = lf//"solution  : < "//itoa(gnno*ndof*8+1)//" > "//itoa(gnno)//" "//itoa(ndof)//" "//itoa(currentTimeStepIndex)//lf
                 
-                
+               
                 call MPI_File_open(MPI_COMM_WORLD, filename, ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), MPI_INFO_NULL, fileno, ierr)
                 
                 ! Set our file view to be in bytes
                 displacement = 0_MPI_OFFSET_KIND
-                fhoffset = sizeof(fh) ! prints to 101, aka num of characters = num of bytes (1 char = 1 byte)
-                shoffset = fhoffset + sizeof(magicNumber)
 
                 call MPI_File_set_view(fileno, displacement, MPI_BYTE, MPI_BYTE, 'native', MPI_INFO_NULL, ierr)
                 
@@ -767,17 +763,20 @@ contains
                         ! Write the file header
                         call MPI_File_write_at(fileno, displacement, fh, len(fh), MPI_CHARACTER, wstatus, ierr)
                         ! Write the byte order magic number
-                        call MPI_File_write_at(fileno, fhoffset, magicNumber, 1, MPI_INT, wstatus, ierr)
+                        displacement = displacement + sizeof(fh)
+                        call MPI_File_write_at(fileno, displacement, magicNumber, 1, MPI_INT, wstatus, ierr)
                         ! Write the solution header
-                        call MPI_File_write_at(fileno, shoffset, sh, len(sh), MPI_CHARACTER, wstatus, ierr)
+                        displacement = displacement + sizeof(magicNumber)
+                        call MPI_File_write_at(fileno, displacement, sh, len(sh), MPI_CHARACTER, wstatus, ierr)
                 endif
+                ! For all procs, set the displacement to be the end of the solution header
+                displacement = sizeof(fh) + sizeof(magicNumber) + sizeof(sh)
                 
                 ! Write the dof data
                 ! 8 for size of solution data (double precision)
                 do dofIdx=1,ndof
-                        dofoffset = shoffset + sizeof(sh) + (dofIdx-1)*gnno*8
-                        displacement = dofoffset + (ise(1,rank+1)-1)*8
-                        call MPI_File_set_view(fileno, displacement, MPI_BYTE, MPI_BYTE, 'native', MPI_INFO_NULL, ierr)
+                        dofoffset = displacement + (dofIdx-1)*gnno*8 + (ise(1,rank+1)-1)*8
+                        call MPI_File_set_view(fileno, dofoffset, MPI_BYTE, MPI_BYTE, 'native', MPI_INFO_NULL, ierr)
                         call MPI_File_write_all(fileno, qw(:,dofIdx), isize(rank+1), MPI_DOUBLE_PRECISION, wstatus, ierr)
                 enddo
 
