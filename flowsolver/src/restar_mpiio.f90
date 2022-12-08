@@ -725,6 +725,12 @@ contains
                 integer :: fileno
                 character(len=256) filename
                 
+                character*100 hostname
+                integer*4 status
+                integer date_time(8)
+                character*10 b(3)
+                character*200 date_time_str
+
                 integer i1,i2,dofIdx
                 integer :: magicNumber
                 character,parameter :: lf=achar(10) !linefeed aka newline
@@ -733,23 +739,32 @@ contains
                 ! cannot use literal 0, use 0_MPI_OFFSET_KIND for zero
                 integer(mpi_offset_kind) displacement, dofoffset
 
+                call hostnm(hostname, status)
+                call date_and_time(b(1), b(2), b(3), date_time)
+                write(date_time_str, '(a,i0.2,a,i0.2,a,i0.2,x,i0.2,a,i0.2,a,i0.2)') '# ',date_time(1),'/',date_time(2),'/',date_time(3),date_time(5),':',date_time(6),':',date_time(7)
+                
                 write(filename, '(a, i0, a)') 'restart_par.', currentTimestepIndex, '.0'
+                ! variables that don't exist in the flowsolver but won't change?
                 magicNumber = 362436
-                ! variables that don't exist in CRIMSON but won't change
                 i1=5
                 i2=1
 
                 call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
                 call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
                 
+                
                 ! NOTE: Should be using the total number of nshg not just nshg
                 ! Also, this file header will be stored on every processor. A bit silly but necessary to be able to set the offsets correctly.
-                fh = "# PHASTA Input File Version 2.0"//lf//"# Byte Order Magic Number : "//itoa(magicNumber)//lf
+                fh = "# PHASTA Input File Version 2.0"//lf
+                fh = fh//"# Byte Order Magic Number : "//itoa(magicNumber)//lf
+                fh = fh//"# This result was produced on: "//trim(hostname)//lf
+                fh = fh//trim(date_time_str)//lf//lf
+
                 fh = fh//"number of modes : < "//itoa(0)//" > "//itoa(gnno)//lf
-                fh = fh//"number of variables : < "//itoa(0)//" > "//itoa(ndof)//lf
+                fh = fh//"number of variables : < "//itoa(0)//" > "//itoa(ndof)//lf//lf
                 fh = fh//"byteorder magic number  : < "//itoa(i1)//" > "//itoa(i2)//lf
                         
-                sh = lf//"solution  : < "//itoa(gnno*ndof*8+1)//" > "//itoa(gnno)//" "//itoa(ndof)//" "//itoa(currentTimeStepIndex)//lf
+                sh = lf//lf//"solution  : < "//itoa(gnno*ndof*8+1)//" > "//itoa(gnno)//" "//itoa(ndof)//" "//itoa(currentTimeStepIndex)//lf
                 
                
                 call MPI_File_open(MPI_COMM_WORLD, filename, ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), MPI_INFO_NULL, fileno, ierr)
@@ -781,6 +796,14 @@ contains
                 enddo
 
                 call MPI_File_close(fileno, ierr)
-        endsubroutine
+        endsubroutine write_restart_parallel
 
+      !   interface
+      !    integer( kind = C_INT ) function gethostname( hname, len ) bind( C, name = 'gethostname' )
+      !          use iso_c_binding
+      !          implicit none
+      !          character( kind = C_CHAR ) :: hname( * )
+      !          integer( kind = C_INT ), VALUE :: len
+      !    end function gethostname
+      !    end interface
      end
