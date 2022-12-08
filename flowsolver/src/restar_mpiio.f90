@@ -97,6 +97,7 @@ subroutine par_write_restart()
         ! Get variables like currentTimeStepIndex, nshg, and ndof
         ! Look at common.f90 to see a list/description of available variables
         use phcommonvars 
+        use, intrinsic :: iso_fortran_env
         implicit none
         include "mpif.h"
         
@@ -104,92 +105,94 @@ subroutine par_write_restart()
         ! character(len=500) :: filename, str
         character,parameter :: lf=achar(10) !linefeed aka newline
 
-        ! fh = 20 !file unit
-        ! currentTimeStepIndex=0
-
         ! character*4 code
         ! dimension qp(nshg,ndof),acp(nshg,ndof)
-
-        ! write(filename, '(a, i0, a)') 'restart.', currentTimestepIndex, '.0'
-        ! ! open the file and write the proc ID to it?
-        ! open(unit=fh, file=trim(filename), status='new', action='write', &
-        ! form='unformatted', access='stream')
-        ! write(fh) "# Output Generated for ERL :)"//lf
-        ! close(fh)
         
         integer i1,i2
-        integer(mpi_offset_kind) :: offset, fhoffset, bmnoffset, shoffset
+        integer(mpi_offset_kind) displacement !cannot use literal 0, use 0_MPI_OFFSET_KIND for zero
+        integer(mpi_offset_kind) :: offset, fhoffset, shoffset
         integer, dimension(mpi_status_size) :: wstatus
         integer :: fileno
         integer :: ierr, rank, comsize
-        real :: magicNumber
+        integer :: magicNumber
 
-        integer :: msgsize, fhsize, shSize
+        integer :: msgsize
         ! integer, parameter :: msgsize=50
-        character(len=67) :: fileHeader
-        character(len=50) :: mgLine ! Always the same?
-        character(len=50) :: nmLine ! This could change based on total_nshg
-        character(len=50) :: nvLine ! mdof likely always < 10, so should be the same
-        character(len=50) :: solLine ! Can change based on ndof and total_nshg
-        character(len=500) :: solHeader
-        character(len=18) :: message ! Arbitrary large mesage size for now
+        ! character(len=67) :: fileHeader
+        ! character(len=50) :: mgLine ! Always the same?
+        ! character(len=50) :: nmLine ! This could change based on total_nshg
+        ! character(len=50) :: nvLine ! mdof likely always < 10, so should be the same
+        ! character(len=50) :: solLine ! Can change based on ndof and total_nshg
+        ! character(len=500) :: solHeader
+        character(len=:), allocatable :: fh, sh, message
 
         call MPI_Comm_size(MPI_COMM_WORLD, comsize, ierr)
         call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
         
         magicNumber = 362436
-
-        ! variables that exist in CRIMSON that we would like to use
+        
+        if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) ! Useful debugging trick
+        
+        ! variables that don't exist in CRIMSON but won't change
         i1=5
         i2=1
         ! total_nshg = 1000 ! can get from ltg.dat
-        if (rank == 0) then
-                write(fileHeader, '(a,a)') "# PHASTA Input File Version 2.0"//lf,"# Byte Order Magic Number : 362436"//lf
-
-                ! NOTE: Should be using the total number of nshg not just nshg
-                write(mgLine, '(a,i0,a,i0,a)') "byteorder magic number  : < ",i1," > ",i2,lf
-                write(nmLine, '(a,i0,a,i0,a)') "number of modes : < ",0," > ",nshg,lf
-                write(nvLine, '(a,i0,a,i0,a)') "number of variables : < ",0," > ",ndof,lf
-                write(solLine,'(a,i0,a,3(x,i0),a)') "solution  : < ",(nshg*ndof*8+1)," > ",nshg,ndof,currentTimeStepIndex,lf
-
-                write(solHeader, '(a,a,a)') trim(nmLine),trim(nvLine),trim(solLine)
-        endif
+        ! if (rank == 0) then
+                ! write(fileHeader, '(a,a)') "# PHASTA Input File Version 2.0"//lf,"# Byte Order Magic Number : 362436"//lf
+                ! ! NOTE: Should be using the total number of nshg not just nshg
+                ! write(fileHeader, '(a,a,i0,a,i0,a') fileHeader, "byteorder magic number  : < ",i1," > ",i2,lf
+                fh = "# PHASTA Input File Version 2.0"//lf//"# Byte Order Magic Number : "//itoa(magicNumber)//lf
+                fh = fh//"number of modes : < "//itoa(0)//" > "//itoa(nshg)//lf
+                fh = fh//"number of variables : < "//itoa(0)//" > "//itoa(ndof)//lf
+                fh = fh//"byteorder magic number  : < "//itoa(i1)//" > "//itoa(i2)//lf
+                
+                sh = lf//"solution  : < "//itoa(nshg*ndof*8+1)//" > "//itoa(nshg)//itoa(ndof)//itoa(currentTimeStepIndex)//lf
+        ! endif
         
-        fhsize = LEN_TRIM(fileHeader)
-        shSize = LEN_TRIM(solHeader)
-
-        write(message, '(a, i0, a)') 'Hello from proc ',rank,lf
-        msgsize = LEN_TRIM(message)
-
-        fhoffset = 0
-        bmnoffset = fhsize 
-        shoffset = bmnoffset + LEN_TRIM(mgLine) + sizeof(magicNumber)
-        offset = shoffset + shSize + rank*msgsize
-
+        message = 'Hello from proc '//itoa(rank)//lf
+        
         call MPI_File_open(MPI_COMM_WORLD, "helloworld.txt",     &
-                        ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
-                        MPI_INFO_NULL, fileno, ierr)
+        ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+        MPI_INFO_NULL, fileno, ierr)
+        
+        ! Set our file view to be in bytes
+        displacement = 0_MPI_OFFSET_KIND
+        fhoffset = sizeof(fh) ! prints to 101, aka num of characters = num of bytes (1 char = 1 byte)
+        shoffset = fhoffset + sizeof(magicNumber)
 
-        ! call MPI_File_seek(fileno, offset, MPI_SEEK_SET, ierr)
-        ! call MPI_File_write(fileno, message, msgsize, MPI_CHARACTER, &
-        !                 wstatus, ierr)
-
+        call MPI_File_set_view(fileno, displacement, MPI_BYTE, MPI_BYTE, 'native', MPI_INFO_NULL, ierr)
+        
         if (rank == 0) then
                 ! Write the file header
-                call MPI_File_write_at(fileno, fhoffset, fileHeader, fhsize, MPI_CHARACTER, &
+                call MPI_File_write_at(fileno, displacement, fh, len(fh), MPI_CHARACTER, &
                         wstatus, ierr)
                 ! Write the byte order magic number
-                call MPI_File_write_at(fileno, bmnoffset, mgLine, LEN_TRIM(mgLine), MPI_CHARACTER, &
-                        wstatus, ierr)
-                call MPI_File_write_at(fileno, bmnoffset+LEN_TRIM(mgLine), magicNumber, sizeof(magicNumber), MPI_DOUBLE_PRECISION, &
+                call MPI_File_write_at(fileno, fhoffset, magicNumber, 1, MPI_INT, &
                         wstatus, ierr)
                 ! Write the solution header
-                call MPI_File_write_at(fileno, shoffset, solHeader, shSize, MPI_CHARACTER, &
+                call MPI_File_write_at(fileno, shoffset, sh, len(sh), MPI_CHARACTER, &
                         wstatus, ierr)
         endif
-        call MPI_File_write_at(fileno, offset, message, msgsize, MPI_CHARACTER, &
-        wstatus, ierr)
+        
+        if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) 
+        displacement = shoffset + sizeof(sh)
+        call MPI_File_set_view(fileno, displacement, MPI_BYTE, MPI_BYTE, 'native', MPI_INFO_NULL, ierr)
+
+        if(rank.eq.0) write(*,"(a)") __FILE__//":"//itoa(__LINE__) 
+        offset = rank*sizeof(message)
+        call MPI_File_write_at(fileno, offset, message, len(message), MPI_CHARACTER, &
+                wstatus, ierr)
+        ! call MPI_File_write(fileno, message, len(message), MPI_CHARACTER, &
+        !         wstatus, ierr)
 
         call MPI_File_close(fileno, ierr)
-
+contains
+function itoa(i) result(res)
+        implicit none
+        character(:), allocatable :: res
+        INTEGER,intent(in) :: i
+        character(range(i)+2) :: tmp
+        write(tmp,'(i0)') i
+        res = trim(tmp)
+     end function
 end
